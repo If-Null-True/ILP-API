@@ -2,7 +2,7 @@
 
 FROM python:3.8-slim-buster
 
-EXPOSE 5000/tcp
+EXPOSE 5000
 
 WORKDIR /ilp_api
 
@@ -11,4 +11,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD [ "flask", "run", "--host=0.0.0.0"]
+CMD [ "gunicorn", "-b" ,":5000", "--access-logfile",  "-", "--error-logfile", "-", "--workers", "3", "wsgi:app"]
