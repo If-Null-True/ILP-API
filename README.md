@@ -10,18 +10,6 @@ To install this and run it yourself you must first:
 
 - Install Python3
 
-  - Install `flask` and `pymongo`
+  - Install `flask`, `pymongo` and `MongoEngine`
 
 - Install MongoDB
-
-  - Create an ilp database
-
-  - Create a user who has permissions for the database
-
-  - Write this information into config.json e.g. `{
-    "mongodb": {
-        "host": "localhost",
-        "username": "ilpUser",
-        "password": "5ECUR3P@55W0RD"
-    }
-}`

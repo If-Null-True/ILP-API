@@ -1,9 +1,0 @@
-articles: {
-    student: studentID,
-    hmtl: html,
-    tags: text[],
-    category: text,
-    title: text,
-    description: text,
-    imageID: text
-}[]
