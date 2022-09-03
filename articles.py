@@ -4,7 +4,7 @@ from flask import Blueprint, current_app, request, g
 from mongoengine.context_managers import switch_db
 import auth
 import models
-from article import upload
+from article import upload, modify
 
 def from_documents_to_json(documents):
     return '[%s]' % (','.join([doc.to_json() for doc in documents]))
@@ -37,8 +37,16 @@ def article_tag(tag):
     with switch_db(models.Article, "default"):
         return from_documents_to_json(models.Article.objects(tags=tag))
 
+@articles_blueprint.route("/owned", methods=['GET'])
+@auth.is_authorized
+def article_owned():
+    print(g.uid)
+    with switch_db(models.Article, "default"):
+        return from_documents_to_json(models.Article.objects(students=g.uid))
+
 @articles_blueprint.route("/create", methods=['POST'])
 @auth.is_authorized
+@auth.need_user_info
 def article_upload():
     content_type = request.headers.get('Content-Type')
     if (content_type == 'application/json'):
@@ -47,7 +55,7 @@ def article_upload():
             with switch_db(models.Article, "default"):
                 article = models.Article(**json)
                 article.students = [g.uid]
-                article.authors = ["Unknown Full Name Etc", "Other Person"]
+                article.authors = [g.display_name]
                 article.favoured = 0
                 article.draft = True
 
@@ -67,3 +75,4 @@ def article_upload():
         return 'Content-Type not supported!'
 
 articles_blueprint.register_blueprint(upload.articles_upload, url_prefix='/upload')
+articles_blueprint.register_blueprint(modify.article_modify, url_prefix='/modify')

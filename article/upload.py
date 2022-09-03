@@ -1,18 +1,15 @@
-from flask import Blueprint, flash, redirect, request, g, url_for, current_app
+from flask import Blueprint, request, g, current_app
 from mongoengine.context_managers import switch_db
 import werkzeug
 import auth
 import models
 import os
 
-
-articles_upload = Blueprint('/upload', __name__,)
-
-
 def allowed_file(filename):
     return '.' in filename 
     # and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+articles_upload = Blueprint('/upload', __name__,)
 
 @articles_upload.route('/<article_id>/file', methods=['POST'])
 @auth.is_authorized
