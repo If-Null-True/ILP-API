@@ -1,9 +1,10 @@
-import datetime
+from datetime import date, datetime
 import os
 from flask import Blueprint, current_app, request, g
 from mongoengine.context_managers import switch_db
 import auth
 import models
+from mongoengine.queryset.visitor import Q
 from article import upload, modify
 
 def from_documents_to_json(documents):
@@ -14,35 +15,68 @@ articles_blueprint = Blueprint('/articles', __name__,)
 # Retrieve
 @articles_blueprint.route("/all", methods=['GET'])
 def all_articles():
+    args = request.args
     with switch_db(models.Article, "default"):
-        return from_documents_to_json(models.Article.objects)
+        if args.get("date_start") and args.get("date_end"):
+            return from_documents_to_json(models.Article.objects(
+                Q(created__lte=date.fromisoformat(args.get("date_end"))) & 
+                Q(created__gte=date.fromisoformat(args.get("date_start")))).order_by('authors'))
+        else:
+            return from_documents_to_json(models.Article.objects.order_by('authors'))
 
 @articles_blueprint.route("/search/<search>", methods=['GET'])
 def student_search(search):
+    args = request.args
     with switch_db(models.Article, "default"):
-        return from_documents_to_json(models.Article.objects.search_text(search).order_by('$text_score'))
+        if args.get("date_start") and args.get("date_end"):
+            return from_documents_to_json(models.Article.objects(
+                Q(created__lte=date.fromisoformat(args.get("date_end"))) & 
+                Q(created__gte=date.fromisoformat(args.get("date_start")))).search_text(search).order_by('$text_score'))
+        else:
+            return from_documents_to_json(models.Article.objects.search_text(search).order_by('$text_score'))
         
 @articles_blueprint.route("/student/<student>", methods=['GET'])
 def student_article(student):
+    args = request.args
     with switch_db(models.Article, "default"):
-        return from_documents_to_json(models.Article.objects(students=student))
+        if args.get("date_start") and args.get("date_end"):
+            return from_documents_to_json(models.Article.objects(
+                Q(created__lte=date.fromisoformat(args.get("date_end"))) & 
+                Q(created__gte=date.fromisoformat(args.get("date_start"))) &
+                Q(students=student)).order_by('authors'))
+        else:
+            return from_documents_to_json(models.Article.objects.order_by('authors'))
 
 @articles_blueprint.route("/category/<category>", methods=['GET'])
 def article_category(category):
+    args = request.args
     with switch_db(models.Article, "default"):
-        return from_documents_to_json(models.Article.objects(category=category))
+        if args.get("date_start") and args.get("date_end"):
+            return from_documents_to_json(models.Article.objects(
+                Q(created__lte=date.fromisoformat(args.get("date_end"))) & 
+                Q(created__gte=date.fromisoformat(args.get("date_start"))) &
+                Q(category=category)).order_by('authors'))
+        else:
+            return from_documents_to_json(models.Article.objects.order_by('authors'))
 
 @articles_blueprint.route("/tag/<tag>", methods=['GET'])
 def article_tag(tag):
+    args = request.args
     with switch_db(models.Article, "default"):
-        return from_documents_to_json(models.Article.objects(tags=tag))
+        if args.get("date_start") and args.get("date_end"):
+            return from_documents_to_json(models.Article.objects(
+                Q(created__lte=date.fromisoformat(args.get("date_end"))) & 
+                Q(created__gte=date.fromisoformat(args.get("date_start"))) &
+                Q(tags=tag)).order_by('authors'))
+        else:
+            return from_documents_to_json(models.Article.objects.order_by('authors'))
 
 @articles_blueprint.route("/owned", methods=['GET'])
 @auth.is_authorized
 def article_owned():
     print(g.uid)
     with switch_db(models.Article, "default"):
-        return from_documents_to_json(models.Article.objects(students=g.uid))
+        return from_documents_to_json(models.Article.objects(students=g.uid).order_by('authors'))
 
 @articles_blueprint.route("/create", methods=['POST'])
 @auth.is_authorized
@@ -59,7 +93,7 @@ def article_upload():
                 article.favoured = 0
                 article.draft = True
 
-                article.last_updated = datetime.datetime.utcnow()
+                article.last_updated = datetime.utcnow()
 
                 article.save()
 
