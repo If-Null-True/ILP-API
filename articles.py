@@ -1,3 +1,4 @@
+from copyreg import constructor
 from datetime import date, datetime
 import os
 from flask import Blueprint, current_app, request, g
@@ -13,6 +14,15 @@ def from_documents_to_json(documents):
 articles_blueprint = Blueprint('/articles', __name__,)
 
 # Retrieve
+@articles_blueprint.route("/<id>", methods=['GET'])
+def specific_article(id):
+    try:
+        with switch_db(models.Article, "default"):
+            print(models.Article.objects.get(id=id).students)
+            return models.Article.objects.get(id=id).to_json()
+    except Exception as e:
+            return str(e), 400
+
 @articles_blueprint.route("/all", methods=['GET'])
 def all_articles():
     args = request.args
@@ -87,6 +97,9 @@ def article_upload():
         try:
             json = request.json
             with switch_db(models.Article, "default"):
+                if json['type'] == 'websiteLink' and not json['link']:
+                    return 'You have not specified a valid website link', 400
+                article = models.Article(**json)
                 article = models.Article(**json)
                 article.students = [g.uid]
                 article.authors = [g.display_name]

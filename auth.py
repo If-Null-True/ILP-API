@@ -2,6 +2,7 @@ from flask import request, g, current_app
 import requests
 import os
 import jwt
+import re
 
 def is_authorized(f):
     def inner(*args, **kwargs):
@@ -9,6 +10,8 @@ def is_authorized(f):
         if "Authorization" not in request.headers:
             return "You are unauthorised!", 401
         authorization = request.headers["Authorization"]
+        if not re.match("Bearer (.*)", authorization):
+            return "Invalid Authorization Header", 400
         _, token = authorization.split() # Throw this in some regex to make sure it looks libe "Bearer (.*)"
         try:
             claims = jwt.decode(token, public_key, algorithms=["RS256"]) # comes from jwt library RS256
