@@ -45,6 +45,17 @@ def student_search(search):
         else:
             return from_documents_to_json(models.Article.objects.search_text(search).order_by('$text_score'))
         
+@articles_blueprint.route("/favoured", methods=['GET'])
+def favoured_articles():
+    args = request.args
+    with switch_db(models.Article, "default"):
+        if args.get("date_start") and args.get("date_end"):
+            return from_documents_to_json(models.Article.objects(
+                Q(created__lte=date.fromisoformat(args.get("date_end"))) & 
+                Q(created__gte=date.fromisoformat(args.get("date_start")))).order_by('-favoured'))
+        else:
+            return from_documents_to_json(models.Article.objects.order_by('-favoured'))
+
 @articles_blueprint.route("/student/<student>", methods=['GET'])
 def student_article(student):
     args = request.args
@@ -55,7 +66,7 @@ def student_article(student):
                 Q(created__gte=date.fromisoformat(args.get("date_start"))) &
                 Q(students=student)).order_by('authors'))
         else:
-            return from_documents_to_json(models.Article.objects.order_by('authors'))
+            return from_documents_to_json(models.Article.objects(students=student).order_by('authors'))
 
 @articles_blueprint.route("/category/<category>", methods=['GET'])
 def article_category(category):
@@ -67,7 +78,7 @@ def article_category(category):
                 Q(created__gte=date.fromisoformat(args.get("date_start"))) &
                 Q(category=category)).order_by('authors'))
         else:
-            return from_documents_to_json(models.Article.objects.order_by('authors'))
+            return from_documents_to_json(models.Article.objects(category=category).order_by('authors'))
 
 @articles_blueprint.route("/tag/<tag>", methods=['GET'])
 def article_tag(tag):
@@ -79,7 +90,7 @@ def article_tag(tag):
                 Q(created__gte=date.fromisoformat(args.get("date_start"))) &
                 Q(tags=tag)).order_by('authors'))
         else:
-            return from_documents_to_json(models.Article.objects.order_by('authors'))
+            return from_documents_to_json(models.Article.objects(tags=tag).order_by('authors'))
 
 @articles_blueprint.route("/owned", methods=['GET'])
 @auth.is_authorized

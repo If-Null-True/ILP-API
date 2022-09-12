@@ -26,7 +26,7 @@ def share_article(article_id, user_id):
         with switch_db(models.Article, "default"):
             article: models.Article = models.Article.objects.get(id=article_id)
             students = article.students
-            if not g.uid == students[0]:
+            if not g.uid == students[0] and not ("nbscmanlys-h:teacher" in g.scopes or g.uid in current_app.config["ADMINS"]):
                 return "You are not the owner of this article!", 400
             if user_id in students:
                 return "User already has edit access!", 400
@@ -40,7 +40,7 @@ def share_article(article_id, user_id):
                 'authors': authors
             }
     except Exception as e:
-        return ("Failed to get user info!\n" + str(e)), 401
+        return ("Failed to get user info!\n" + str(e)), 400
 
 @article_modify.route('/<article_id>/unshare/<user_id>', methods=['GET'])
 @auth.is_authorized
@@ -48,7 +48,7 @@ def unshare_article(article_id, user_id):
     with switch_db(models.Article, "default"):
         article: models.Article = models.Article.objects.get(id=article_id)
         students = article.students
-        if not g.uid == students[0]:
+        if not g.uid == students[0] and not ("nbscmanlys-h:teacher" in g.scopes or g.uid in current_app.config["ADMINS"]):
             return "You are not the owner of this article!", 400
         if not user_id in students:
             return "User already doesn't has edit access!", 400
@@ -64,6 +64,15 @@ def unshare_article(article_id, user_id):
             'authors': authors
         }
 
+@article_modify.route('/<article_id>/favoured/<score>', methods=['GET'])
+@auth.is_authorized
+@auth.is_teacher
+def set_favoured_article(article_id, score):
+    with switch_db(models.Article, "default"):
+        article: models.Article = models.Article.objects.get(id=article_id)
+        article.update(favoured=float(score))
+        return "Hehehhea updated!"
+
 @article_modify.route("/<article_id>", methods=['POST'])
 @auth.is_authorized
 def article_upload(article_id):
@@ -74,14 +83,15 @@ def article_upload(article_id):
             print(json)
             with switch_db(models.Article, "default"):
                 article: models.Article = models.Article.objects.get(id=article_id)
-                if not g.uid in article.students:
+                if not g.uid in article.students and not ("nbscmanlys-h:teacher" in g.scopes or g.uid in current_app.config["ADMINS"]):
                     return "You don't have edit access!", 400
                 json.pop('_id', None)
                 json.pop('students', None)
                 json.pop('authors', None)
                 json.pop('created', None)
                 json.pop('last_updated', None)
-                json.pop('favoured', None)
+                if not ("nbscmanlys-h:teacher" in g.scopes or g.uid in current_app.config["ADMINS"]):
+                    json.pop('favoured', None)
                 json.pop('draft', None)
                 json.pop('type', None)
 
