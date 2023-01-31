@@ -73,6 +73,17 @@ def set_favoured_article(article_id, score):
         article.update(favoured=float(score))
         return "Hehehhea updated!"
 
+@article_modify.route('/<article_id>', methods=['DELETE'])
+@auth.is_authorized
+def delete_article(article_id):
+    with switch_db(models.Article, "default"):
+        article: models.Article = models.Article.objects.get(id=article_id)
+        if not g.uid == article.students[0] and not ("nbscmanlys-h:teacher" in g.scopes or g.uid in current_app.config["ADMINS"]):
+            return "You are not the owner of this article!", 400
+        article_stuff = article.to_json()
+        article.delete()
+        return article_stuff
+
 @article_modify.route("/<article_id>", methods=['POST'])
 @auth.is_authorized
 def article_upload(article_id):
